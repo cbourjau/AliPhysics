@@ -33,6 +33,7 @@ set(SRCS
   AliAnalysisTaskC2.cxx
   AliAnalysisTaskMCSmearing.cxx
   AliAnalysisTaskValidation.cxx
+  AliESDToSaneTTreeTask.cxx
   )
 
 # Headers from sources

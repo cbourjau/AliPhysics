@@ -9,4 +9,6 @@
 #pragma link C++ class AliAnalysisTaskMCSmearing+;
 #pragma link C++ class AliAnalysisTaskValidation+;
 
+#pragma link C++ class AliESDToSaneTTreeTask+;
+
 #endif /* __CINT__ */
