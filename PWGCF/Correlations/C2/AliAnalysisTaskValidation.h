@@ -43,9 +43,12 @@ class AliAnalysisTaskValidation : public AliAnalysisTaskSE {
     Float_t pt;
     Float_t weight;
 
-    //Constructor
+    //Constructors
+    Track()
+      :eta(0), phi(0), pt(0), weight(0) {};
     Track(Float_t _eta, Float_t _phi, Float_t _pt, Float_t _weight)
       :eta(_eta), phi(_phi), pt(_pt), weight(_weight) {};
+    
   };
   typedef std::vector<AliAnalysisTaskValidation::Track> Tracks;
   

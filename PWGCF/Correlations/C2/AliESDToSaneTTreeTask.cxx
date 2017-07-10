@@ -5,6 +5,7 @@
 #include "THn.h"
 #include "TList.h"
 #include "TTree.h"
+#include "TChain.h"
 #include "TMath.h"
 
 #include "AliAODEvent.h"
@@ -50,9 +51,10 @@ AliESDToSaneTTreeTask::AliESDToSaneTTreeTask(const char *name)
     fSettings()
 {
   // Rely on validation task for event and track selection
+  DefineInput(0, TChain::Class());
   DefineInput(1, AliAnalysisTaskValidation::Class());
   DefineOutput(1, TList::Class());
-  // DefineOutput(2, TTree::Class());
+  DefineOutput(2, TTree::Class());
 }
 
 //________________________________________________________________________
@@ -65,9 +67,9 @@ void AliESDToSaneTTreeTask::UserCreateOutputObjects()
   }
 
   // AliLog::SetGlobalLogLevel(AliLog::kError);
-
-  this->fSaneTree = new TTree("sane_tree", "Why do sane trees need a damn title");
-
+  if (!this->fSaneTree){
+    this->fSaneTree = new TTree("sane_tree", "Why do sane trees need a damn title");
+  }
   // this->fSaneTree->Branch("tracks", &fTracksVector);
   Float_t dummy_float = 0;
   this->fSaneTree->Branch("centrality", &dummy_float);
