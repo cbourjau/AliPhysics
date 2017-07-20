@@ -171,7 +171,6 @@ Float_t AliESDToSaneTTreeTask::GetEventClassifierValue() {
       ->GetEstimator(this->fSettings.fMultEstimator);
     // const Float_t multiplicity = ((Float_t)multEstimator->GetValue()) / multEstimator->GetMean();
     const Float_t multiplicity = multEstimator->GetPercentile();
-    cout << multiplicity << endl;
     return multiplicity;
   }
 }
