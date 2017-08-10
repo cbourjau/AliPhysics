@@ -16,7 +16,7 @@ class AliESDToSaneTTreeTask : public AliAnalysisTaskSE {
 
   // Function acting as "AddTask" macro
   // Takes a reference to the event an track selection task
-  static AliESDToSaneTTreeTask ConnectTask(AliAnalysisTaskValidation &validation_tas);
+  static AliESDToSaneTTreeTask* ConnectTask(AliAnalysisTaskValidation *validation_tas);
   virtual ~AliESDToSaneTTreeTask() {};
 
   virtual void   UserCreateOutputObjects();

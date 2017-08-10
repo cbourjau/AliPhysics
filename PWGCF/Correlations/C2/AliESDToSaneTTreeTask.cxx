@@ -62,8 +62,8 @@ AliESDToSaneTTreeTask::AliESDToSaneTTreeTask(const char *name)
 }
 
 
-AliESDToSaneTTreeTask AliESDToSaneTTreeTask::ConnectTask(AliAnalysisTaskValidation &validation_task) {
-  AliESDToSaneTTreeTask task = AliESDToSaneTTreeTask("SaneTask");
+AliESDToSaneTTreeTask *AliESDToSaneTTreeTask::ConnectTask(AliAnalysisTaskValidation *validation_task) {
+  AliESDToSaneTTreeTask *task = new AliESDToSaneTTreeTask("SaneTask");
   AliAnalysisManager *mgr = AliAnalysisManager::GetAnalysisManager();
   if (!mgr) {
     ::Error("AddTaskC2", "No analysis manager to connect to.");
@@ -77,13 +77,13 @@ AliESDToSaneTTreeTask AliESDToSaneTTreeTask::ConnectTask(AliAnalysisTaskValidati
 			 AliAnalysisManager::kOutputContainer,
 			 Form("%s", mgr->GetCommonFileName()));
 
-  mgr->AddTask(&task);
+  mgr->AddTask(task);
   // Boiler plate code for connecting the input
-  mgr->ConnectInput(&task, 0, mgr->GetCommonInputContainer());
+  mgr->ConnectInput(task, 0, mgr->GetCommonInputContainer());
   // Connect the output tree
-  mgr->ConnectOutput(&task, 1, cout_tree);
+  mgr->ConnectOutput(task, 1, cout_tree);
   // Connect the validation task
-  task.ConnectInput(1, validation_task.GetOutputSlot(2)->GetContainer());
+  task->ConnectInput(1, validation_task->GetOutputSlot(2)->GetContainer());
   return task;
 }
 //________________________________________________________________________
