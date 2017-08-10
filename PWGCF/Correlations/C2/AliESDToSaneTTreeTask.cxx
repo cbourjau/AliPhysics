@@ -17,6 +17,9 @@
 #include "AliMultSelection.h"
 #include "AliStack.h"
 #include "AliVEvent.h"
+#include "AliAnalysisManager.h"
+#include "AliAnalysisDataContainer.h"
+#include "AliAnalysisDataSlot.h"
 
 #include "AliESDToSaneTTreeTask.h"
 #include "AliAnalysisC2Utils.h"
@@ -33,12 +36,12 @@ AliESDToSaneTTreeTask::AliESDToSaneTTreeTask()
     fEtas(),
     fPhis(),
     fWeights(),
-    fSettings()
+    fSettings(),
+    fFile(0)
 {
   // Rely on validation task for event and track selection
   DefineInput(1, AliAnalysisTaskValidation::Class());
-  DefineOutput(1, TList::Class());
-  // DefineOutput(2, TTree::Class());
+  DefineOutput(1, TTree::Class());
 }
 
 //________________________________________________________________________
@@ -49,18 +52,60 @@ AliESDToSaneTTreeTask::AliESDToSaneTTreeTask(const char *name)
     fEtas(),
     fPhis(),
     fWeights(),
-    fSettings()
+    fSettings(),
+    fFile(0)
 {
   // Rely on validation task for event and track selection
   DefineInput(0, TChain::Class());
   DefineInput(1, AliAnalysisTaskValidation::Class());
-  DefineOutput(1, TList::Class());
-  DefineOutput(2, TTree::Class());
+  DefineOutput(1, TTree::Class());
 }
 
+
+AliESDToSaneTTreeTask AliESDToSaneTTreeTask::ConnectTask(AliAnalysisTaskValidation &validation_task) {
+  AliESDToSaneTTreeTask task = AliESDToSaneTTreeTask("SaneTask");
+  AliAnalysisManager *mgr = AliAnalysisManager::GetAnalysisManager();
+  if (!mgr) {
+    ::Error("AddTaskC2", "No analysis manager to connect to.");
+  };
+
+  // Note: It is important to set the output class to TTree here or
+  // all goes to shit - without a warning, of course :P
+  AliAnalysisDataContainer *cout_tree =
+    mgr->CreateContainer("sane_tree",
+			 TTree::Class(),
+			 AliAnalysisManager::kOutputContainer,
+			 Form("%s", mgr->GetCommonFileName()));
+
+  mgr->AddTask(&task);
+  // Boiler plate code for connecting the input
+  mgr->ConnectInput(&task, 0, mgr->GetCommonInputContainer());
+  // Connect the output tree
+  mgr->ConnectOutput(&task, 1, cout_tree);
+  // Connect the validation task
+  task.ConnectInput(1, validation_task.GetOutputSlot(2)->GetContainer());
+  return task;
+}
 //________________________________________________________________________
 void AliESDToSaneTTreeTask::UserCreateOutputObjects()
 {
+  AliAnalysisManager* mgr = AliAnalysisManager::GetAnalysisManager();
+  TObject* oc = mgr->GetOutputs()->FindObject("sane_tree");
+  if (!oc) {
+    Warning("CreateTree", "No output container %sTree",GetName());
+    return;
+  }
+  AliAnalysisDataContainer* c = static_cast<AliAnalysisDataContainer*>(oc);
+  c->SetSpecialOutput();
+
+  Printf("Opening analysis file for container %s", c->GetName());
+  fFile = AliAnalysisManager::OpenFile(c, "RECREATE");
+  if (!fFile) {
+    Warning("CreateTree", "Failed to open container file");
+    return;
+  }
+  
+
   // Setup output list if it was not done already
   if (!this->fOutputList){
     this->fOutputList = new TList();
@@ -70,6 +115,7 @@ void AliESDToSaneTTreeTask::UserCreateOutputObjects()
   // AliLog::SetGlobalLogLevel(AliLog::kError);
   if (!this->fSaneTree){
     this->fSaneTree = new TTree("sane_tree", "Why do sane trees need a damn title");
+    this->fSaneTree->SetDirectory(fFile);
   }
   // this->fSaneTree->Branch("tracks", &fTracksVector);
   Float_t dummy_float = 0;
@@ -79,8 +125,7 @@ void AliESDToSaneTTreeTask::UserCreateOutputObjects()
   this->fSaneTree->Branch("phis", &fPhis);
   this->fSaneTree->Branch("weights", &fWeights);
 
-  PostData(1, fOutputList);
-  PostData(2, fSaneTree);
+  PostData(1, fSaneTree);
 }
 
 //________________________________________________________________________
@@ -88,11 +133,8 @@ void AliESDToSaneTTreeTask::UserExec(Option_t *)
 {
   // Get the event validation object
   AliAnalysisTaskValidation* ev_val = dynamic_cast<AliAnalysisTaskValidation*>(this->GetInputData(1));
-
-  AliMCEvent*   mcEvent = this->MCEvent();
-
+  
   if (!ev_val->IsValidEvent()){
-    PostData(1, this->fOutputList);
     return;
   }
   Float_t centrality = this->GetEventClassifierValue();
@@ -100,13 +142,13 @@ void AliESDToSaneTTreeTask::UserExec(Option_t *)
     ? this->InputEvent()->GetPrimaryVertex()->GetZ()
     : -999;
   Double_t evWeight = (/*this->fSettings.kMCTRUTH == this->fSettings.fDataType*/ false)
-    ? mcEvent->GenEventHeader()->EventWeight()
+    ? this->MCEvent()->GenEventHeader()->EventWeight()
     : 1;
   // Load all valid tracks/hits used in the following
   auto tracks = this->GetValidTracks();
   for (auto v: {fEtas, fPhis, fWeights}) {
     v.clear();
-    v.resize(tracks.size());
+    v.reserve(tracks.size());
   }
   for (auto track: tracks) {
     fEtas.push_back(track.eta);
@@ -119,14 +161,16 @@ void AliESDToSaneTTreeTask::UserExec(Option_t *)
 
   this->fSaneTree->Fill();
 
-  PostData(1, this->fOutputList);
-  PostData(2, this->fSaneTree);
+  PostData(1, this->fSaneTree);
 }
 
 //________________________________________________________________________
 void AliESDToSaneTTreeTask::Terminate(Option_t *)
 {
-  // PostData(1, this->fOutputList);
+  // if (!fFile) return;
+  // fFile->Write();
+  // fFile->Close();
+  // delete fFile;
 }
 
 AliAnalysisTaskValidation::Tracks AliESDToSaneTTreeTask::GetValidTracks() {

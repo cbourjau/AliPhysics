@@ -13,6 +13,10 @@ class AliESDToSaneTTreeTask : public AliAnalysisTaskSE {
  public:
   AliESDToSaneTTreeTask();
   AliESDToSaneTTreeTask(const char *name);
+
+  // Function acting as "AddTask" macro
+  // Takes a reference to the event an track selection task
+  static AliESDToSaneTTreeTask ConnectTask(AliAnalysisTaskValidation &validation_tas);
   virtual ~AliESDToSaneTTreeTask() {};
 
   virtual void   UserCreateOutputObjects();
@@ -51,6 +55,8 @@ class AliESDToSaneTTreeTask : public AliAnalysisTaskSE {
   TList *fOutputList;  //!
 
   TTree* fSaneTree; //!  A nice and sane tree for the analysis
+  TFile* fFile;     //!  Output file. Keep as member so that we can close in Terminate
+
   std::vector<float> fEtas; //!
   std::vector<float> fPhis; //!
   std::vector<float> fWeights; //!
