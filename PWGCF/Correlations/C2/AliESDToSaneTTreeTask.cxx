@@ -144,24 +144,24 @@ void AliESDToSaneTTreeTask::UserExec(Option_t *)
   Double_t evWeight = (/*this->fSettings.kMCTRUTH == this->fSettings.fDataType*/ false)
     ? this->MCEvent()->GenEventHeader()->EventWeight()
     : 1;
+
   // Load all valid tracks/hits used in the following
   auto tracks = this->GetValidTracks();
-  for (auto v: {fEtas, fPhis, fWeights}) {
-    v.clear();
-    v.reserve(tracks.size());
-  }
-  for (auto track: tracks) {
-    fEtas.push_back(track.eta);
-    fPhis.push_back(track.phi);
-    fWeights.push_back(track.weight);
-  }
 
-  this->fSaneTree->SetBranchAddress("centrality", &centrality);
-  this->fSaneTree->SetBranchAddress("zvtx", &zvtx);
-
-  this->fSaneTree->Fill();
-
-  PostData(1, this->fSaneTree);
+  // Write the current event as a python dictionary to stderr. Skrew you ROOT, you piece of $#!7!
+  std::cerr << "{ ";
+  std::cerr << "\"centrality\": " << centrality << ",";
+  std::cerr << "\"zvtx\": " << zvtx << ",";
+  std::cerr << "\"etas\": [";
+  for (auto track: tracks) {std::cerr << track.eta << ",";}
+  std::cerr << "], ";
+  std::cerr << "\"phis\": [";
+  for (auto track: tracks) {std::cerr << track.phi << ",";}
+  std::cerr << "],";
+  std::cerr << "\"weights\": [";
+  for (auto track: tracks) {std::cerr << track.weight << ",";}
+  std::cerr << "],";
+  std::cerr << "}" <<std::endl;
 }
 
 //________________________________________________________________________
